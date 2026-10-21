@@ -1,0 +1,46 @@
+# Zverejnenie PDF z releasov tohto repozitára na GitHub Pages,
+# aby sa v prehliadači otvárali priamo, a nie sťahovali.
+# - spúšťa sa pri vytvorení alebo úprave releasu (aj keď ho upraví workflow
+#   z iného repozitára cez token) a ručne zo záložky Actions
+# - zo všetkých releasov stiahne súbory *.pdf a zverejní ich na
+#   https://jurajtekel.github.io/pdfs/<nazov>.pdf
+# Súbor patrí do repozitára jurajtekel/pdfs ako .github/workflows/pages.yml.
+name: Pages
+ 
+on:
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+ 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+ 
+concurrency:
+  group: pages
+  cancel-in-progress: false
+ 
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Stiahnutie PDF zo všetkých releasov
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir site
+          for tag in $(gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName --jq '.[].tagName'); do
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern '*.pdf' --dir site --clobber
+          done
+          ls -l site
+ 
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+ 
+      - id: deployment
+        uses: actions/deploy-pages@v4

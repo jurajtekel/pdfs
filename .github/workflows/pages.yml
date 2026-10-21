@@ -8,8 +8,8 @@
 name: Pages
  
 on:
-  release:
-    types: [published, edited]
+#  release:
+#    types: [published, edited]
   workflow_dispatch:
  
 permissions:
